@@ -5,6 +5,8 @@ import {
   ListObjectsV2Command,
 } from "@aws-sdk/client-s3";
 
+import { getRepositoryStructure as fetchRepositoryStructure } from "../tools/getRepoStructure.js";
+
 function requiredEnv(name: string): string {
   const value = process.env[name];
 
@@ -15,7 +17,7 @@ function requiredEnv(name: string): string {
   return value;
 }
 
-const bucket = requiredEnv("REPOSITORY_S3_BUCKET");
+const bucket = requiredEnv("S3_BUCKET_NAME");
 
 const s3 = new S3Client({
   region: requiredEnv("AWS_REGION"),
@@ -152,16 +154,36 @@ export async function getS3FileContent({
   };
 }
 
-export async function getS3RepositoryStructure(s3Prefix: string) {
-  const prefix = normalizePrefix(s3Prefix);
-  const { objects, truncated } = await listObjects(prefix);
+export const getRepositoryStructure = {
+  name: "getRepositoryStructure",
 
-  return {
-    files: objects.map(item => item.key.slice(prefix.length)),
-    totalFiles: objects.length,
-    truncated,
-  };
-}
+  description:
+    "Fetches the complete file and directory structure of the currently selected public GitHub repository. Use this tool when the user asks about repository structure, files, folders, or project organization.",
+
+  inputSchema: {
+    json: {
+      type: "object",
+      properties: {
+        repoUrl: {
+          type: "string",
+          description: "The GitHub repository URL.",
+        },
+      },
+      required: ["repoUrl"],
+    },
+  },
+
+  callback: async ({ repoUrl }: { repoUrl: string }) => {
+    try {
+      return await fetchRepositoryStructure(repoUrl);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  },
+};
 
 export async function searchS3Repository({
   s3Prefix,
@@ -178,7 +200,7 @@ export async function searchS3Repository({
   const { objects, truncated: listingTruncated } =
     await listObjects(prefix, 300);
 
-  const matches = [];
+  const matches: { filePath: string; lineNumber: number; snippet: string }[] = [];
   let filesScanned = 0;
 
   for (const object of objects) {

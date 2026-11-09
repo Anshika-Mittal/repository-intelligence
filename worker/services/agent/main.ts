@@ -7,19 +7,44 @@ import {
 import { stdin, stdout } from "node:process";
 
 import { createRepositoryAgent } from "./agent.js";
-import type { RepositoryStorage } from "../tools/s3Repository.js";
+import { getRepositoryStructure, type RepositoryStorage } from "../tools/s3Repository.js";
 import { ingestion } from "../ingestion/ingestRepository.js";
 import { retrieveRepositoryContext } from "./retrieveRepositoryContext.js";
 
-type RepositoryContext = {
-  repositoryId: string;
-  commitSha: string;
+type RepositoryContext = RepositoryStorage & {
+  repoUrl: string;
 };
+
+import pool from "../config/db.js";
+
+async function getRepositoryS3Prefix(
+  repositoryId: string,
+  commitSha: string
+): Promise<string> {
+  const result = await pool.query(
+    `
+      SELECT s3_prefix
+      FROM repository_versions
+      WHERE repository_id = $1
+        AND commit_sha = $2
+      LIMIT 1
+    `,
+    [repositoryId, commitSha]
+  );
+
+  const s3Prefix = result.rows[0]?.s3_prefix;
+
+  if (!s3Prefix) {
+    throw new Error("S3 prefix not found for this repository version.");
+  }
+
+  return s3Prefix;
+}
 
 // Ask for a repository and ingest it.
 async function getRepositoryUrl(
   rl: Interface
-): Promise<{ repoUrl: string } & RepositoryContext> {
+): Promise<RepositoryContext> {
   const repoUrl = (
     await rl.question("Enter GitHub repository URL: ")
   ).trim();
@@ -39,24 +64,29 @@ async function getRepositoryUrl(
     );
   }
 
+  const s3Prefix = await getRepositoryS3Prefix(
+    result.repositoryId,
+    result.commitSha
+  );
+
   return {
     repoUrl,
     repositoryId: result.repositoryId,
     commitSha: result.commitSha,
+    s3Prefix,
   };
 }
-
 // Retrieve relevant summaries and provide them to the agent.
 async function askRepositoryQuestion(
   question: string,
-  repoUrl: string,
-  repository: RepositoryContext
+  repository: RepositoryContext,
+  repositoryAgent: ReturnType<typeof createRepositoryAgent>
 ) {
   const context = await retrieveRepositoryContext({
     query: question,
     repositoryId: repository.repositoryId,
     commitSha: repository.commitSha,
-    numberOfResults: 1,
+    numberOfResults: 5,
   });
 
   console.log("\nRetrieved repository context:");
@@ -68,7 +98,7 @@ async function askRepositoryQuestion(
       : "No relevant repository context was retrieved.";
 
   const prompt = `
-Repository URL: ${repoUrl}
+Repository URL: ${repository.repoUrl}
 
 User question:
 ${question}
@@ -78,15 +108,37 @@ ${contextText}
 
 Instructions:
 - Answer using the retrieved repository context where relevant.
+- Use tools to inspect source files when necessary.
 - Refer to source file paths when possible.
 - If the context is insufficient, clearly state what is missing.
 - Do not invent implementation details.
 `;
 
-  const result = await agent.invoke(prompt);
+  try {
 
-  console.log("\nRepository Intelligence Assistant:");
-  console.dir(result.lastMessage, { depth: null });
+    const result = await getRepositoryStructure.callback({
+      repoUrl: "https://github.com/Anshika-Mittal/DentyTech",
+    });
+
+  // const result = await repositoryAgent.invoke(prompt);
+  // console.log("STOP REASON:", result.stopReason);
+  console.log("RESPONSE:", JSON.stringify(result, null, 2));
+
+  console.log("\nComplete agent result:");
+  console.dir(result, { depth: null });
+
+  console.log("\nLast message:");
+  // console.dir(result.lastMessage, { depth: null });
+} catch (error) {
+  console.error("\nAGENT INVOCATION ERROR:");
+
+  if (error instanceof Error) {
+    console.error("Message:", error.message);
+    console.error("Stack:", error.stack);
+  } else {
+    console.dir(error, { depth: null });
+  }
+}
 }
 
 async function main() {
@@ -96,17 +148,24 @@ async function main() {
   });
 
   try {
-    // Step 1: Ingest the repository or detect an existing version.
+    // Step 1: Ingest repository and retrieve its S3 prefix.
     const repository = await getRepositoryUrl(rl);
 
-    // Step 2: Ask the initial question.
+    // Step 2: Create an agent specifically for this repository.
+    const repositoryAgent = createRepositoryAgent({
+      repositoryId: repository.repositoryId,
+      commitSha: repository.commitSha,
+      s3Prefix: repository.s3Prefix,
+    });
+
+    // Step 3: Ask the initial question.
     await askRepositoryQuestion(
       "Explain the overall architecture of the given repository.",
-      repository.repoUrl,
-      repository
+      repository,
+      repositoryAgent
     );
 
-    // Step 3: Continue the conversation.
+    // Step 4: Continue the conversation.
     while (true) {
       const userMessage = (
         await rl.question("\nUser (type 'exit' to quit): ")
@@ -122,8 +181,8 @@ async function main() {
 
       await askRepositoryQuestion(
         userMessage,
-        repository.repoUrl,
-        repository
+        repository,
+        repositoryAgent
       );
     }
   } finally {

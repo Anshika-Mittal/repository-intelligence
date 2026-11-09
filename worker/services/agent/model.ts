@@ -16,16 +16,16 @@ export const bedrockModel = new BedrockModel({
 
   temperature: 0.2,
   maxTokens: 2048,
-
   guardrailConfig: {
     guardrailIdentifier: requiredEnv("BEDROCK_GUARDRAIL_ID"),
     guardrailVersion: requiredEnv("BEDROCK_GUARDRAIL_VERSION"),
-    trace: "enabled",
+    trace: 'enabled_full', // Options: 'enabled', 'disabled', 'enabled_full'
+    streamProcessingMode: 'sync', // Options: 'sync', 'async'
     redaction: {
-      input: true,
-      output: false,
+      input: true, // Default: true
+      inputMessage: '[User input redacted.]', // Custom redaction message
+      output: false, // Default: false
+      outputMessage: '[Assistant output redacted.]', // Custom redaction message
     },
-
-    guardLatestUserMessage: true,
   },
 });

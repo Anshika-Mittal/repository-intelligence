@@ -5,7 +5,7 @@ import { z } from "zod";
 import { retrieveRepositoryContext } from "./retrieveRepositoryContext.js";
 
 import {
-  getS3RepositoryStructure,
+  getRepositoryStructure,
   getS3FileContent,
   searchS3Repository,
   type RepositoryStorage,
@@ -21,7 +21,7 @@ export function createRepositoryTools(repository: RepositoryStorage) {
         "Get the directory and file structure of the current repository.",
       inputSchema: z.object({}),
       callback: async () => {
-        return await getS3RepositoryStructure(prefix);
+        return await getRepositoryStructure.callback({ repoUrl: prefix });
       },
     }),
 
