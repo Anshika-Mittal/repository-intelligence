@@ -1,7 +1,9 @@
 /client/node_modules
 /server/node_modules
 /worker/node_modules
+/try-client/node_modules
 /worker/.env
 /server/.env
 /client/.env
+/try-client/.env
 output.txt
