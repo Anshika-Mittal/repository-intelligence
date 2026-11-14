@@ -5,6 +5,7 @@ const cors = require("cors");
 const session = require("express-session");
 const pgSession = require("connect-pg-simple")(session);
 const { Pool } = require("pg");
+const chatRoutes = require("./routes/chatRoutes");
 
 const authRoutes = require("./routes/authRoutes");
 
@@ -86,6 +87,8 @@ app.get("/api/protected", requireAuth, (req, res) => {
     user: req.session.user,
   });
 });
+
+app.use("/api/chats", chatRoutes);
 
 // Error handler
 app.use((err, req, res, next) => {

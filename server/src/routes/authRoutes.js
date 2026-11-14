@@ -13,6 +13,7 @@ router.get("/callback", authController.callback);
 // Get logged-in user
 router.get("/me", authController.me);
 
+
 // Logout
 router.get("/logout", authController.logout);
 

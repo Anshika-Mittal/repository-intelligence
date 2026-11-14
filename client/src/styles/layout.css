@@ -1,0 +1,147 @@
+.app-layout {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 255px;
+  flex-shrink: 0;
+  background: #10121b;
+  border-right: 1px solid #242737;
+  padding: 25px 17px;
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  font-size: 17px;
+  font-weight: 700;
+  margin-bottom: 45px;
+  color: white;
+}
+
+.brand svg {
+  color: #818cf8;
+}
+
+.sidebar-label {
+  color: #777f94;
+  font-size: 11px;
+  letter-spacing: 1px;
+  margin: 0 0 15px 10px;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 6px;
+  border-radius: 8px;
+  color: #a5abc0;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: left;
+  font-size: 14px;
+}
+
+.sidebar-link:hover,
+.sidebar-link.active {
+  background: #22243b;
+  color: #a5a9ff;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+}
+
+.add-repo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background: #6366f1;
+  color: white;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.header {
+  height: 75px;
+  padding: 0 35px;
+  border-bottom: 1px solid #242737;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.header h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.header-user,
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.user-info {
+  font-size: 13px;
+}
+
+.icon-button {
+  background: transparent;
+  border: none;
+  color: #a5abc0;
+}
+
+.page-content {
+  padding: 32px 35px;
+}
+
+@media (max-width: 760px) {
+  .sidebar {
+    width: 70px;
+    padding: 20px 9px;
+  }
+
+  .brand span,
+  .sidebar-link span,
+  .sidebar-label,
+  .add-repo-link:not(svg) {
+    display: none;
+  }
+
+  .brand {
+    justify-content: center;
+  }
+
+  .sidebar-link {
+    justify-content: center;
+  }
+
+  .header {
+    padding: 0 15px;
+  }
+
+  .page-content {
+    padding: 20px 15px;
+  }
+
+  .user-info span {
+    display: none;
+  }
+}

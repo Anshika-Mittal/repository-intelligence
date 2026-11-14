@@ -1,3 +1,4 @@
+
 const API_URL = import.meta.env.VITE_API_URL;
 
 export interface User {
@@ -15,19 +16,13 @@ export interface AuthResponse {
 export const authService = {
   // Redirect browser to Express login endpoint
   login() {
-  console.log("API_URL:", API_URL);
+    window.location.href = `${API_URL}/auth/login`;
+  },
 
-  const loginUrl = `${API_URL}/login`;
-
-  console.log("Redirecting to:", loginUrl);
-
-  window.location.href = loginUrl;
-},
-
-  // Get current authenticated user
+  // Get currently authenticated user
   async getCurrentUser(): Promise<AuthResponse> {
     const response = await fetch(
-      `${API_URL}/me`,
+      `${API_URL}/auth/me`,
       {
         method: "GET",
         credentials: "include",
@@ -43,6 +38,6 @@ export const authService = {
 
   // Logout through Express
   logout() {
-    window.location.href = `${API_URL}/logout`;
+    window.location.href = `${API_URL}/auth/logout`;
   },
 };
